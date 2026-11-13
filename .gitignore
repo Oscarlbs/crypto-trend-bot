@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+data/
+state/
+logs/
+reports/
+panel/icono-local.png
+panel/mascota-local.png

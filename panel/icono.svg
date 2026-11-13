@@ -1,0 +1,18 @@
+<!-- Icono de BananaTrading: un plátano sencillo sobre fondo oscuro. Lo convierte a .icns panel/instalar-app.sh -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3d3327"/><stop offset="1" stop-color="#15110c"/></linearGradient>
+    <linearGradient id="piel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff27a"/><stop offset=".55" stop-color="#ffd43b"/><stop offset="1" stop-color="#ffb300"/></linearGradient>
+    <radialGradient id="luz" cx=".3" cy=".2" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#fondo)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#luz)"/>
+  <g transform="translate(0 26)"><g transform="translate(490 656) rotate(-60) scale(.9) translate(-430 -530)"><path d="M566 212C296 250 196 660 596 852c26 12 62-8 50-36C486 690 486 404 656 240c24-26-52-42-90-28z" fill="#000" opacity="0.3"/></g></g>
+  <g transform="translate(490 656) rotate(-60) scale(.9) translate(-430 -530)">
+    <path d="M572 222l10-78c2-14 14-22 28-20l40 8c14 3 22 16 18 30l-22 74z" fill="#7a4d16"/>
+    <path d="M566 212C296 250 196 660 596 852c26 12 62-8 50-36C486 690 486 404 656 240c24-26-52-42-90-28z" fill="url(#piel)"/>
+    <path d="M596 852c26 12 62-8 50-36-10-8-22-16-32-26-18 14-30 40-18 62z" fill="#6b4312"/>
+    <path d="M470 286c-124 118-128 330 20 474" fill="none" stroke="#fff6b8" stroke-width="30" stroke-linecap="round" opacity=".85"/>
+    <path d="M600 262c-150 150-150 380 10 540" fill="none" stroke="#e79f00" stroke-width="16" stroke-linecap="round" opacity=".55"/>
+  </g>
+</svg>

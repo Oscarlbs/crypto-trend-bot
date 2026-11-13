@@ -1,0 +1,28 @@
+services:
+  trendbot:
+    build: .
+    image: trendbot:latest
+    container_name: trendbot
+    restart: unless-stopped
+    env_file: .env
+    # Sin puertos: el bot no expone nada; solo sale hacia Binance y Telegram.
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"   # tu usuario del servidor (id -u / id -g)
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 100
+    volumes:
+      - ./state:/app/state      # libro del bot y registros de operaciones
+      - ./data:/app/data        # caché de precios del backtest
+      - ./reports:/app/reports  # informes del backtest
+    stop_grace_period: 60s      # si llega un stop a mitad de una orden, le da tiempo a terminarla
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<title>BananaTrading</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%8C%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --plane: #fff3c9; --surface: #fffdf3; --ink: #2e1f0f; --ink-2: #6a5433; --muted: #9a8460;
+    --grid: #f0e4bd; --axis: #dccb93; --line: #3b2413; --shadow: #3b2413;
+    --bot: #c97800; --market: #6a45d6; --quiet: #cdbf99;
+    --banana: #ffd43b; --banana-2: #ffe98a; --peel: #f7a600; --unripe: #b9dc8f; --violet: #5b3cc4; --night: #2a1a66;
+    --good-text: #1c7a3d; --critical: #d6402f; --wash: rgba(59,36,19,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --plane: #130d27; --surface: #1f1740; --ink: #fdf6d8; --ink-2: #cfc4a0; --muted: #9a90b8;
+      --grid: #2e2558; --axis: #43387d; --line: #4d3f96; --shadow: #07041a;
+      --bot: #c98500; --market: #8f7af0; --quiet: #5d5488;
+      --unripe: #4f7a45; --good-text: #55d488; --critical: #ff7a6b; --wash: rgba(255,255,255,.06);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--plane); color: var(--ink); font: 15.5px/1.5 ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 18px 60px; }
+
+  /* ---- cabecera ---- */
+  header { position: sticky; top: 0; z-index: 5; background: var(--banana); border-bottom: 3px solid var(--line); color: #2e1f0f; }
+  .bar { max-width: 1120px; margin: 0 auto; padding: 8px 18px; display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 21px; letter-spacing: -.02em; }
+  .brand svg { width: 34px; height: 40px; transform: rotate(-8deg); }
+  .brand img { height: 44px; width: auto; margin: -4px 0; transform: rotate(-6deg); filter: drop-shadow(2px 2px 0 rgba(59,36,19,.35)); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px; border: 2px solid #3b2413; background: #fffdf3; font-size: 13px; font-weight: 600; color: #6a5433; white-space: nowrap; }
+  .pill b { color: #2e1f0f; font-weight: 800; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #b8a67c; flex: none; }
+  .dot.ok { background: #2f9e55; } .dot.bad { background: #d6402f; } .dot.warn { background: #f08c00; }
+  .grow { flex: 1; }
+  .when { font-size: 13px; opacity: .75; }
+  button.go { font: inherit; font-weight: 800; border: 2.5px solid #3b2413; border-radius: 13px; padding: 6px 15px; background: #fffdf3; color: #2e1f0f; cursor: pointer; box-shadow: 3px 3px 0 #3b2413; transition: transform .08s, box-shadow .08s; }
+  button.go:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #3b2413; }
+  button.go:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #3b2413; }
+  button.go:disabled { opacity: .6; cursor: default; transform: none; box-shadow: 3px 3px 0 #3b2413; }
+  :focus-visible { outline: 3px solid var(--market); outline-offset: 2px; border-radius: 6px; }
+
+  /* ---- títulos ---- */
+  h2 { font-size: 25px; font-weight: 800; margin: 44px 0 2px; letter-spacing: -.02em; display: flex; align-items: center; gap: 10px; }
+  h2 .em { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; background: var(--banana); border: 2.5px solid var(--line); box-shadow: 3px 3px 0 var(--shadow); font-size: 21px; transform: rotate(-4deg); flex: none; }
+  h3 { font-size: 16px; font-weight: 800; margin: 0 0 2px; }
+  p.sub { margin: 4px 0 16px; color: var(--ink-2); max-width: 72ch; }
+
+  /* ---- tarjetas ---- */
+  .card { background: var(--surface); border: 2.5px solid var(--line); border-radius: 22px; padding: 18px; box-shadow: 5px 5px 0 var(--shadow); }
+  .grid { display: grid; gap: 18px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+
+  /* ---- portada ---- */
+  .hero { margin-top: 22px; position: relative; overflow: hidden; color: #fdf6d8; background: linear-gradient(135deg, #6a45d6, #2a1a66); display: grid; grid-template-columns: auto 1fr; gap: 10px 26px; align-items: center; padding: 22px 26px; }
+  .hero::before, .hero::after { content: "✦"; position: absolute; color: #ffe45c; opacity: .8; }
+  .hero::before { right: 34px; top: 20px; font-size: 30px; } .hero::after { right: 120px; bottom: 22px; font-size: 16px; }
+  .mascot { width: 150px; height: 216px; filter: drop-shadow(5px 7px 0 rgba(10,5,40,.45)); animation: bob 3.4s ease-in-out infinite; transform-origin: 50% 90%; }
+  @keyframes bob { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-7px); } }
+  img.mascot { width: auto; height: 236px; }
+  img.mascot.susto { animation: shake .5s ease-in-out infinite; }
+  @keyframes shake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+  @media (prefers-reduced-motion: reduce) { .mascot, .splash svg { animation: none !important; } }
+  .bubble { position: relative; background: #fffdf3; color: #2e1f0f; border: 2.5px solid #17102e; border-radius: 20px; padding: 12px 16px; max-width: 560px; box-shadow: 4px 4px 0 rgba(10,5,40,.5); }
+  .bubble::before { content: ""; position: absolute; left: -13px; top: 26px; width: 22px; height: 22px; background: #fffdf3; border-left: 2.5px solid #17102e; border-bottom: 2.5px solid #17102e; transform: rotate(45deg); }
+  .bubble .say { font-size: 19px; font-weight: 800; line-height: 1.25; }
+  .bubble .more { color: #6a5433; margin-top: 3px; font-size: 14.5px; }
+  .money { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px 16px; margin-top: 16px; }
+  .money .big { font-size: 60px; font-weight: 800; line-height: 1; letter-spacing: -.03em; color: #ffd43b; text-shadow: 3px 3px 0 rgba(10,5,40,.55); }
+  .money .delta { font-weight: 800; font-size: 17px; } .money .since { font-size: 13.5px; opacity: .8; }
+  .seg { display: flex; gap: 3px; height: 12px; margin: 16px 0 8px; border-radius: 999px; }
+  .seg i { display: block; border-radius: 999px; min-width: 0; border: 2px solid #17102e; }
+  .hero .legend { color: #e6dcff; }
+  @media (max-width: 640px) { .hero { grid-template-columns: 1fr; padding: 18px; } .mascot { width: 104px; height: 150px; margin: 0 auto; } img.mascot { width: auto; height: 160px; } .bubble::before { left: 46%; top: -13px; transform: rotate(135deg); } .money .big { font-size: 46px; } }
+
+  /* ---- fichas ---- */
+  .tile .ico { font-size: 22px; line-height: 1; }
+  .tile .label { font-size: 13.5px; color: var(--ink-2); font-weight: 600; margin-top: 6px; }
+  .tile .value { font-size: 27px; font-weight: 800; letter-spacing: -.02em; }
+  .tile .note { font-size: 13px; color: var(--muted); }
+  .meter { height: 12px; border-radius: 999px; border: 2px solid var(--line); background: color-mix(in srgb, var(--banana) 25%, var(--surface)); overflow: hidden; margin: 8px 0 5px; }
+  .meter i { display: block; height: 100%; background: var(--banana); border-right: 2px solid var(--line); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--ink-2); margin: 4px 0 6px; font-weight: 600; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 16px; height: 0; border-top: 3px solid; border-radius: 3px; flex: none; }
+  .key.box { height: 11px; width: 11px; border: 0; border-radius: 4px; }
+
+  /* ---- monedas ---- */
+  .coin-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .coin-head .name { font-size: 20px; font-weight: 800; }
+  .coin-head .px { font-size: 18px; font-weight: 700; }
+  .verdict { margin: 10px 0 12px; padding: 9px 13px; border-radius: 14px; background: var(--wash); font-size: 15.5px; }
+  .verdict.in { background: color-mix(in srgb, var(--banana) 38%, var(--surface)); }
+  .verdict b { font-weight: 800; }
+  .rules { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 6px; font-size: 12.5px; margin: 6px 0; align-items: center; }
+  .rules .h { color: var(--muted); text-align: center; font-weight: 600; }
+  .rules .r { color: var(--muted); padding-right: 6px; white-space: nowrap; font-weight: 600; }
+  .rule { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 6px; border-radius: 12px; background: var(--wash); color: var(--muted); font-weight: 700; cursor: default; }
+  .rule svg { width: 17px; height: 24px; flex: none; }
+  .rule.in { background: color-mix(in srgb, var(--banana) 45%, var(--surface)); color: var(--ink); }
+  .rule.in svg { transform: rotate(-10deg); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px 14px; margin: 14px 0 2px; font-size: 13px; color: var(--ink-2); }
+  .facts b { display: block; font-size: 18px; color: var(--ink); font-weight: 800; }
+
+  /* ---- gráficos y tablas ---- */
+  .chart { position: relative; margin-top: 8px; }
+  .chart svg { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
+  .chart text { font: 600 11px ui-rounded, "SF Pro Rounded", system-ui, sans-serif; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  .chart text.end { fill: var(--ink-2); font-size: 12.5px; font-weight: 800; }
+  .cap { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { padding: 8px; border-bottom: 2px dashed var(--grid); text-align: right; font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--muted); font-weight: 700; font-size: 13px; }
+  tbody td:not(:first-child) { font-weight: 700; }
+  tbody tr:last-child td { border-bottom: 0; }
+  th .key { display: inline-block; vertical-align: middle; margin-right: 7px; }
+  .scroll { overflow-x: auto; }
+  details { margin-top: 8px; } summary { cursor: pointer; color: var(--ink-2); font-size: 13px; font-weight: 700; }
+  .checks { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 7px; }
+  .checks li { display: flex; gap: 9px; align-items: baseline; }
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(225px, 1fr)); }
+  .steps .ico { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--banana); border: 2.5px solid var(--line); box-shadow: 3px 3px 0 var(--shadow); font-size: 22px; margin-bottom: 8px; }
+  .steps li:nth-child(odd) .ico { transform: rotate(-5deg); } .steps li:nth-child(even) .ico { transform: rotate(4deg); }
+  .steps p { margin: 2px 0 0; color: var(--ink-2); font-size: 14.5px; }
+  .alert { border: 2.5px solid var(--line); border-radius: 18px; padding: 12px 16px; margin-top: 18px; background: color-mix(in srgb, var(--critical) 18%, var(--surface)); box-shadow: 4px 4px 0 var(--shadow); font-weight: 600; }
+  .alert.soft { background: color-mix(in srgb, var(--banana) 40%, var(--surface)); }
+  .empty { color: var(--muted); padding: 22px 8px; text-align: center; font-weight: 600; }
+  .empty span { display: block; font-size: 30px; margin-bottom: 4px; }
+  footer { margin-top: 44px; font-size: 13px; color: var(--muted); text-align: center; }
+  #tip { position: fixed; z-index: 20; pointer-events: none; display: none; background: var(--surface); color: var(--ink); border: 2.5px solid var(--line); border-radius: 14px; padding: 8px 11px; font-size: 13px; box-shadow: 4px 4px 0 var(--shadow); max-width: 270px; }
+  #tip .t { color: var(--muted); margin-bottom: 4px; font-weight: 700; }
+  #tip .row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  #tip .row b { font-weight: 800; } #tip .row span.n { color: var(--ink-2); }
+  .stale { opacity: .5; transition: opacity .2s; }
+  .splash { text-align: center; padding: 70px 16px; color: var(--ink-2); font-weight: 700; font-size: 17px; }
+  .splash svg, .splash img { width: 110px; height: 158px; animation: bob 1.6s ease-in-out infinite; transform-origin: 50% 90%; filter: drop-shadow(4px 5px 0 var(--shadow)); }
+  .splash img { width: auto; height: 180px; }
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand" id="marca">BananaTrading</div>
+  <span class="pill" id="modo"></span>
+  <span class="pill" id="salud"></span>
+  <span class="grow"></span>
+  <span class="when" id="cuando"></span>
+  <button class="go" id="actualizar" type="button">Refrescar</button>
+</div></header>
+<div class="wrap">
+  <div id="aviso"></div>
+  <main id="app"><div class="splash" id="carga"></div></main>
+  <footer>
+    BananaTrading solo mira: no puede comprar, vender ni cambiar nada del bot. Los datos vienen de tu servidor por SSH y esta pantalla solo existe en tu Mac.<br>
+    No es asesoramiento financiero. Lo que pasó en el pasado no garantiza nada; el plátano también puede resbalar y perder dinero.
+  </footer>
+</div>
+<div id="tip" role="status"></div>
+<script>
+'use strict';
+// ---------- utilidades ----------
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === 'class') e.className = v; else if (k === 'style') e.style.cssText = v;
+    else if (k === 'text') e.textContent = v; else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k);
+  return e;
+}
+function sv(tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  return e;
+}
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const nf = (d, o) => new Intl.NumberFormat('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d, ...o });
+const eur = (v, d = 2) => nf(d).format(v) + ' €';
+const num = (v, d = 2) => nf(d).format(v);
+const pct = (v, d = 1, sign = false) => (sign && v > 0 ? '+' : '') + nf(d).format(v * 100).replace('-', '−') + ' %';
+const coin = s => s.split('/')[0];
+const NAMES = { BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana' };
+const day = (s, o) => new Date(s + 'T00:00:00Z').toLocaleDateString('es-ES', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric', ...o });
+
+// ---------- el plátano (dibujo fijo: no lleva datos dentro) ----------
+const BODY = 'M566 212C296 250 196 660 596 852c26 12 62-8 50-36C486 690 486 404 656 240c24-26-52-42-90-28z';
+const FACES = {
+  chill: '<path d="M296 418h320" stroke="#17120e" stroke-width="22" stroke-linecap="round"/><path d="M300 410h134c9 0 15 7 14 16l-8 58c-4 30-30 52-60 52h-28c-30 0-56-23-58-53l-8-57c-1-9 5-16 14-16z" fill="#17120e"/><path d="M472 410h134c9 0 15 7 14 16l-8 57c-2 30-28 53-58 53h-28c-30 0-56-22-60-52l-8-58c-1-9 5-16 14-16z" fill="#17120e"/><path d="M322 434h50l-36 60zM494 434h50l-36 60z" fill="#fff" opacity=".3"/><path d="M398 604c34 36 84 36 114 2" fill="none" stroke="#3b2413" stroke-width="22" stroke-linecap="round"/>',
+  feliz: '<path d="M330 478c18-40 62-40 80 0M470 478c18-40 62-40 80 0" fill="none" stroke="#3b2413" stroke-width="24" stroke-linecap="round"/><path d="M372 560c8 86 132 86 140 0z" fill="#3b2413" stroke="#3b2413" stroke-width="18" stroke-linejoin="round"/><path d="M408 612c18-22 50-22 68 0-18 14-50 14-68 0z" fill="#ff7a7a"/><circle cx="318" cy="548" r="22" fill="#ff9a7a" opacity=".55"/><circle cx="566" cy="548" r="22" fill="#ff9a7a" opacity=".55"/>',
+  susto: '<circle cx="372" cy="466" r="46" fill="#fff" stroke="#3b2413" stroke-width="18"/><circle cx="510" cy="466" r="46" fill="#fff" stroke="#3b2413" stroke-width="18"/><circle cx="380" cy="472" r="16" fill="#17120e"/><circle cx="502" cy="472" r="16" fill="#17120e"/><ellipse cx="442" cy="596" rx="30" ry="38" fill="#3b2413"/><path d="M610 380c26 34 40 56 40 76a40 40 0 0 1-80 0c0-20 14-42 40-76z" fill="#7cc7ff" stroke="#3b2413" stroke-width="14"/>',
+};
+// La foto del plátano (la del icono) la mete el instalador si tienes panel/mascota-local.png, que no va a git.
+// Sin ella se usa el dibujo de abajo, que sí cambia de cara según el día.
+const MASCOTA = '';
+function mascot(mood, cls) {
+  if (!MASCOTA) return banana(mood, cls);
+  return el('img', { class: ((cls || '') + ' ' + mood).trim(), src: MASCOTA, alt: 'Plátano' });
+}
+function banana(mood, cls) {
+  const box = document.createElement('div');
+  box.innerHTML = `<svg viewBox="170 110 560 790" class="${cls || ''}" role="img" aria-label="Plátano"><defs><linearGradient id="piel-${mood}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff38a"/><stop offset=".5" stop-color="#ffd43b"/><stop offset="1" stop-color="#f7a600"/></linearGradient></defs>
+    <g stroke="#3b2413" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"><path d="M574 214l14-74 78 16-18 80" fill="#8a5a1c"/><path d="${BODY}" fill="url(#piel-${mood})"/><path d="M598 850c22 8 52-8 46-32" fill="none" stroke="#5b3a14" stroke-width="40"/></g>
+    <path d="M452 300c-110 120-110 320 30 450" fill="none" stroke="#fffbe0" stroke-width="24" stroke-linecap="round" opacity=".8"/>
+    <g transform="rotate(-9 450 470)">${FACES[mood]}</g></svg>`;
+  return box.firstElementChild;
+}
+function miniBanana(ripe) {
+  const box = document.createElement('div');
+  box.innerHTML = `<svg viewBox="170 110 560 790" aria-hidden="true"><path d="${BODY}" fill="${ripe ? '#ffd43b' : css('--unripe')}" stroke="${ripe ? '#3b2413' : css('--muted')}" stroke-width="46" stroke-linejoin="round"/></svg>`;
+  return box.firstElementChild;
+}
+
+// ---------- tooltip ----------
+const tip = $('tip');
+function showTip(x, y, title, rows) {
+  tip.textContent = '';
+  tip.append(el('div', { class: 't', text: title }));
+  for (const r of rows) {
+    tip.append(el('div', { class: 'row' },
+      r.color ? el('i', { class: 'key', style: 'border-color:' + r.color }) : null,
+      el('b', { text: r.value }), el('span', { class: 'n', text: r.name })));
+  }
+  tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 14)) + 'px';
+  tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12)) + 'px';
+}
+const hideTip = () => { tip.style.display = 'none'; };
+
+// ---------- escalas ----------
+function niceTicks(lo, hi, n) {
+  if (hi === lo) { hi = lo + 1; }
+  const raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || raw;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+function logTicks(lo, hi) {
+  const out = [];
+  for (let p = Math.floor(Math.log10(lo)); p <= Math.ceil(Math.log10(hi)); p++)
+    for (const m of [1, 2, 5]) { const v = m * Math.pow(10, p); if (v >= lo && v <= hi) out.push(v); }
+  return out;
+}
+function xTicks(dates, width) {
+  const span = dates.length, byYear = span > 800, out = [];
+  for (let i = 1; i < span; i++) {
+    const a = dates[i - 1], b = dates[i];
+    if (byYear ? a.slice(0, 4) !== b.slice(0, 4) : a.slice(0, 7) !== b.slice(0, 7))
+      out.push({ i, label: byYear ? b.slice(0, 4) : new Date(b + 'T00:00:00Z').toLocaleDateString('es-ES', { timeZone: 'UTC', month: 'short', year: b.slice(5, 7) === '01' ? '2-digit' : undefined }) });
+  }
+  const keep = Math.max(1, Math.ceil(out.length / Math.max(2, Math.floor(width / 64))));
+  return out.filter((_, k) => k % keep === 0);
+}
+
+// ---------- gráfico de líneas con cursor ----------
+// o: { dates, series: [{name, color, values, width, quiet, step, area, end}], log, fmt, height, min, max, extra(i) }
+function lineChart(host, o) {
+  host.textContent = '';
+  const W = Math.max(300, host.clientWidth), H = o.height || 260;
+  const hasEnd = o.series.some(s => s.end);
+  const pad = { l: 46, r: hasEnd ? 74 : 12, t: 10, b: 22 };
+  const n = o.dates.length;
+  const all = o.series.flatMap(s => s.values).filter(v => v != null && (!o.log || v > 0));
+  let lo = o.min != null ? o.min : Math.min(...all), hi = o.max != null ? o.max : Math.max(...all);
+  if (!o.log && o.min == null && o.max == null) { const m = (hi - lo) * 0.06 || 1; lo -= m; hi += m; }
+  const ty = o.log ? Math.log : v => v;
+  const x = i => pad.l + (n === 1 ? 0.5 : i / (n - 1)) * (W - pad.l - pad.r);
+  const y = v => pad.t + (1 - (ty(v) - ty(lo)) / (ty(hi) - ty(lo))) * (H - pad.t - pad.b);
+  const fmt = o.fmt || (v => num(v, 0));
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', tabindex: 0, 'aria-label': o.label || 'Gráfico' });
+
+  for (const t of (o.ticks || (o.log ? logTicks(lo, hi) : niceTicks(lo, hi, 4)))) {
+    if (t < lo - 1e-9 || t > hi + 1e-9) continue;
+    svg.append(sv('line', { x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t), stroke: css(t === 0 ? '--axis' : '--grid'), 'stroke-width': 1 }));
+    svg.append(sv('text', { x: pad.l - 8, y: y(t) + 4, 'text-anchor': 'end' }, fmt(t)));
+  }
+  for (const t of xTicks(o.dates, W - pad.l - pad.r))
+    svg.append(sv('text', { x: x(t.i), y: H - 6, 'text-anchor': 'middle' }, t.label));
+
+  const base = y(o.log ? lo : Math.max(lo, Math.min(hi, 0)));
+  const ends = [];
+  for (const s of o.series) {
+    let d = '', pen = false, first = null, last = null, prev = null;
+    s.values.forEach((v, i) => {
+      if (v == null || (o.log && v <= 0)) { pen = false; return; }
+      const px = x(i), py = y(v);
+      if (!pen) { d += `M${px.toFixed(1)},${py.toFixed(1)}`; first = first == null ? i : first; }
+      else d += s.step ? `H${px.toFixed(1)}V${py.toFixed(1)}` : `L${px.toFixed(1)},${py.toFixed(1)}`;
+      pen = true; last = i; prev = py;
+    });
+    if (!d) continue;
+    if (s.area) svg.append(sv('path', { d: d + `V${base.toFixed(1)}H${x(first).toFixed(1)}Z`, fill: s.color, opacity: 0.12 }));
+    svg.append(sv('path', { d, fill: 'none', stroke: s.color, 'stroke-width': s.width || 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    if (!s.quiet && n > 1) svg.append(sv('circle', { cx: x(last), cy: y(s.values[last]), r: 4, fill: s.color, stroke: css('--surface'), 'stroke-width': 2 }));
+    if (s.end) ends.push({ y: y(s.values[last]), text: fmt(s.values[last]) });
+  }
+  // Etiquetas de final de línea: solo si no se pisan (si se pisan, mandan la leyenda y el cursor)
+  ends.sort((a, b) => a.y - b.y).forEach((e, k) => {
+    if (k && e.y - ends[k - 1].y < 15) return;
+    svg.append(sv('text', { class: 'end', x: W - pad.r + 9, y: e.y + 4 }, e.text));
+  });
+
+  const cursor = sv('g', { style: 'display:none' });
+  const hair = sv('line', { y1: pad.t, y2: H - pad.b, stroke: css('--axis'), 'stroke-width': 1 });
+  cursor.append(hair);
+  const dots = o.series.map(s => { const c = sv('circle', { r: 4, fill: s.color, stroke: css('--surface'), 'stroke-width': 2 }); if (!s.quiet) cursor.append(c); return c; });
+  svg.append(cursor);
+  let at = n - 1;
+  function point(i, cx, cy) {
+    at = Math.max(0, Math.min(n - 1, i));
+    hair.setAttribute('x1', x(at)); hair.setAttribute('x2', x(at));
+    o.series.forEach((s, k) => {
+      const v = s.values[at];
+      dots[k].style.display = v == null ? 'none' : '';
+      if (v != null) { dots[k].setAttribute('cx', x(at)); dots[k].setAttribute('cy', y(v)); }
+    });
+    cursor.style.display = '';
+    const rows = o.series.filter(s => s.values[at] != null && !s.hide).map(s => ({ color: s.color, value: (s.fmt || fmt)(s.values[at]), name: s.name }));
+    if (o.extra) rows.push(...o.extra(at));
+    const box = svg.getBoundingClientRect();
+    showTip(cx != null ? cx : box.left + x(at) * box.width / W, cy != null ? cy : box.top + pad.t + 30, day(o.dates[at]), rows);
+  }
+  const off = () => { cursor.style.display = 'none'; hideTip(); };
+  svg.addEventListener('pointermove', e => {
+    const box = svg.getBoundingClientRect(), px = (e.clientX - box.left) * W / box.width;
+    point(Math.round((px - pad.l) / (W - pad.l - pad.r) * (n - 1)), e.clientX, e.clientY);
+  });
+  svg.addEventListener('pointerleave', off);
+  svg.addEventListener('blur', off);
+  svg.addEventListener('focus', () => point(at));
+  svg.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); point(at + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 30 : 1)); }
+  });
+  host.append(svg);
+}
+
+// ---------- columnas agrupadas (por año) ----------
+function yearBars(host, rows) {
+  host.textContent = '';
+  const W = Math.max(300, host.clientWidth), H = 240, pad = { l: 46, r: 8, t: 18, b: 24 };
+  const vals = rows.flatMap(r => [r.estrategia, r.comprar]);
+  const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+  const y = v => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
+  const band = (W - pad.l - pad.r) / rows.length, bw = Math.min(24, (band - 14) / 2);
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': 'Resultado de cada año' });
+  for (const t of niceTicks(lo, hi, 4)) {
+    svg.append(sv('line', { x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t), stroke: css(t === 0 ? '--axis' : '--grid'), 'stroke-width': 1 }));
+    svg.append(sv('text', { x: pad.l - 8, y: y(t) + 4, 'text-anchor': 'end' }, pct(t, 0)));
+  }
+  rows.forEach((r, k) => {
+    const cx = pad.l + band * (k + 0.5);
+    svg.append(sv('text', { x: cx, y: H - 6, 'text-anchor': 'middle' }, r.ano));
+    [['estrategia', '--bot', 'El plátano', -bw - 1], ['comprar', '--market', 'Comprar y mantener', 1]].forEach(([key, color, name, dx]) => {
+      const v = r[key], top = Math.min(y(v), y(0)), h = Math.max(1, Math.abs(y(v) - y(0))), x0 = cx + dx, rr = Math.min(4, h, bw / 2);
+      const d = v >= 0
+        ? `M${x0},${top + h}V${top + rr}Q${x0},${top} ${x0 + rr},${top}H${x0 + bw - rr}Q${x0 + bw},${top} ${x0 + bw},${top + rr}V${top + h}Z`
+        : `M${x0},${top}V${top + h - rr}Q${x0},${top + h} ${x0 + rr},${top + h}H${x0 + bw - rr}Q${x0 + bw},${top + h} ${x0 + bw},${top + h - rr}V${top}Z`;
+      const bar = sv('path', { d, fill: css(color), tabindex: 0 });
+      const on = e => { bar.setAttribute('opacity', 0.8); const b = bar.getBoundingClientRect(); showTip(e.clientX || b.left + b.width / 2, e.clientY || b.top, String(r.ano), [{ color: css(color), value: pct(v, 1, true), name }]); };
+      const out = () => { bar.removeAttribute('opacity'); hideTip(); };
+      bar.addEventListener('pointermove', on); bar.addEventListener('pointerleave', out);
+      bar.addEventListener('focus', on); bar.addEventListener('blur', out);
+      svg.append(bar);
+      if (key === 'estrategia' && bw >= 16) svg.append(sv('text', { class: 'end', x: x0 + bw, y: v >= 0 ? top - 5 : top + h + 13, 'text-anchor': 'end' }, pct(v, 0, true)));
+    });
+  });
+  host.append(svg);
+}
+
+// ---------- piezas ----------
+const legend = items => el('div', { class: 'legend' }, items.map(([name, color, box]) => el('span', {}, el('i', { class: 'key' + (box ? ' box' : ''), style: (box ? 'background:' : 'border-color:') + color }), name)));
+const title = (emoji, text) => el('h2', {}, el('span', { class: 'em', text: emoji, 'aria-hidden': 'true' }), text);
+const tile = (ico, label, value, note) => el('div', { class: 'card tile' }, el('div', { class: 'ico', text: ico, 'aria-hidden': 'true' }), el('div', { class: 'label', text: label }), el('div', { class: 'value', text: value }), note ? el('div', { class: 'note', text: note }) : null);
+const empty = (emoji, text) => el('div', { class: 'empty' }, el('span', { text: emoji, 'aria-hidden': 'true' }), text);
+const charts = [];   // se redibujan al cambiar el ancho o el tema
+function chartBox(draw) { const box = el('div', { class: 'chart' }); charts.push(() => draw(box)); return box; }
+const BOT = 'El plátano', HOLD = 'Comprar y mantener';
+
+function nextRun() {
+  const now = new Date(), t = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 7));
+  if (t <= now) t.setUTCDate(t.getUTCDate() + 1);
+  return (t.toDateString() === now.toDateString() ? 'hoy' : 'mañana') + ' a las ' + t.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+const list = names => names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' ni en ' + names[names.length - 1];
+
+function speech(d) {
+  const c = d.cuenta, syms = d.config.simbolos, names = syms.map(s => NAMES[coin(s)] || coin(s));
+  const total = d.config.medias.length * d.config.momentos.length;
+  if (c.parado) return ['susto', '¡Freno de mano echado!', (c.motivo_paro || 'Me he parado.') + ' No toco nada hasta que me reactives tú.'];
+  const held = syms.filter(s => c.posiciones[s].valor > 0.5);
+  if (!held.length) {
+    const any = syms.some(s => d.mercado[s].votos > 0);
+    return ['chill', any ? 'Hoy asoma algo de ola… pero todavía no me subo.' : 'Hoy no hay ola. Me quedo en la hamaca.',
+      any ? 'Alguna regla ya vota que sí; me moveré cuando toque la revisión de la noche.' : `Ninguna de mis ${total} reglas ve tendencia en ${list(names)}. Tu dinero descansa en euros.`];
+  }
+  return ['feliz', '¡Estoy surfeando la ola!', `Tengo un ${pct(c.invertido, 0)} invertido en ${held.map(s => NAMES[coin(s)] || coin(s)).join(' y ')}. El resto sigue en euros.`];
+}
+
+function account(d) {
+  const c = d.cuenta, real = c.modo === 'live', gain = c.equity - c.presupuesto;
+  const [mood, say, more] = speech(d);
+  const parts = [['En euros', c.caja, '#e6dcff'], ...d.config.simbolos.map((s, k) => [NAMES[coin(s)] || coin(s), c.posiciones[s].valor, k ? '#9a85f0' : '#ffd43b'])];
+  const cushion = c.equity - c.suelo_kill, room = Math.max(0, Math.min(1, cushion / (c.presupuesto - c.suelo_kill)));
+  return [
+    el('div', { class: 'card hero' }, mascot(mood, 'mascot'),
+      el('div', {},
+        el('div', { class: 'bubble' }, el('div', { class: 'say', text: say }), el('div', { class: 'more', text: more })),
+        el('div', { class: 'money' }, el('div', { class: 'big', text: eur(c.equity) }),
+          el('div', {}, el('div', { class: 'delta', text: (gain > 0 ? '▲ ' : gain < 0 ? '▼ ' : '') + eur(Math.abs(gain)) + ' (' + pct(c.resultado, 1, true) + ')' }),
+            el('div', { class: 'since', text: (real ? 'dinero de verdad' : 'dinero de mentira') + ' · empezó con ' + eur(c.presupuesto, 0) + (c.inicio ? ' el ' + day(c.inicio.slice(0, 10)) : '') }))),
+        el('div', { class: 'seg', role: 'img', 'aria-label': 'Reparto del dinero' }, parts.filter(p => p[1] > 0.005).map(p => el('i', { style: `flex:${p[1]} 1 0;background:${p[2]}` }))),
+        legend(parts.map(p => [`${p[0]}: ${eur(p[1])}`, p[2], true])))),
+    title('🍌', real ? 'Tu racimo' : 'Tu racimo (de prueba)'),
+    el('p', { class: 'sub', text: real ? 'Lo que gestiono en tu cuenta de Binance.' : 'Estoy en modo prueba: miro los precios reales de Binance, pero compro y vendo de mentira. Aquí no se juega ni un euro de verdad.' }),
+    el('div', { class: 'grid g4' },
+      tile('🏄', 'Invertido ahora', pct(c.invertido, 0), c.invertido > 0 ? 'El resto está en euros' : 'Todo en euros, esperando ola'),
+      tile('📅', 'Días en marcha', String(c.dias), 'Última noche revisada: ' + (c.ultima_vela ? day(c.ultima_vela, { year: undefined }) : 'ninguna')),
+      tile('🏔️', 'Lo más alto que llegó', eur(c.maximo), c.equity < c.maximo ? pct(c.equity / c.maximo - 1, 1) + ' desde esa cima' : 'Ahora mismo está en su cima'),
+      el('div', { class: 'card tile' }, el('div', { class: 'ico', text: '🛑', 'aria-hidden': 'true' }), el('div', { class: 'label', text: 'Freno de emergencia' }), el('div', { class: 'value', text: eur(Math.max(0, cushion)) }),
+        el('div', { class: 'meter', role: 'img', 'aria-label': 'Margen hasta el freno' }, el('i', { style: `width:${room * 100}%` })),
+        el('div', { class: 'note', text: `de margen. Si bajo de ${eur(c.suelo_kill, 0)}, vendo todo y me paro.` }))),
+  ];
+}
+
+function closest(m) {
+  const out = m.reglas.filter(r => !r.sobre_media);
+  if (!out.length) return m.votos < m.total ? 'Está por encima de todas sus medias; lo que falla es que vale menos que hace unas semanas.' : '¡Pleno! Todas las reglas votan que sí.';
+  const near = out.reduce((a, b) => (a.dist_media > b.dist_media ? a : b));
+  const level = m.cierre / (1 + near.dist_media);
+  return `Lo que tiene más a tiro: su media de ${near.sma} días, en ${eur(level, 0)} (le falta subir un ${pct(level / m.cierre - 1, 1)}).`;
+}
+
+function coinCard(d, s) {
+  const m = d.mercado[s], c = d.config, name = NAMES[coin(s)] || coin(s);
+  const head = el('div', { class: 'coin-head' }, el('span', { class: 'name', text: name }), el('span', { class: 'px', text: eur(m.precio, m.precio > 1000 ? 0 : 2) }),
+    el('span', { class: 'cap', style: 'margin:0', text: pct(m.cambio_desde_cierre, 1, true) + ' desde anoche' }));
+  const verdict = el('p', { class: 'verdict' + (m.peso > 0 ? ' in' : '') }, el('b', { text: `${m.votos} de ${m.total} plátanos maduros` }),
+    m.peso > 0 ? ` → quiero un ${pct(m.peso, 0)} del dinero aquí.` : ' → fuera: de esta moneda no quiero nada.');
+  const grid = el('div', { class: 'rules', role: 'table', 'aria-label': 'Voto de cada regla' }, el('span', {}), c.momentos.map(b => el('span', { class: 'h', text: `sube en ${b} días` })));
+  for (const a of c.medias) {
+    grid.append(el('span', { class: 'r', text: `sobre media ${a} d` }));
+    for (const b of c.momentos) {
+      const r = m.reglas.find(q => q.sma === a && q.mom === b);
+      grid.append(el('span', { class: 'rule' + (r.dentro ? ' in' : ''), title: `Media de ${a} días: el precio está un ${pct(Math.abs(r.dist_media), 1)} ${r.sobre_media ? 'por encima' : 'por debajo'}. En ${b} días: ${pct(r.momentum, 1, true)}.` },
+        miniBanana(r.dentro), r.dentro ? 'sí' : 'no'));
+    }
+  }
+  const price = chartBox(box => lineChart(box, {
+    label: `Precio de ${name} y sus medias`, dates: m.fechas, height: 250, fmt: v => num(v, 0),
+    series: [...c.medias.map(a => ({ name: `Media ${a} días`, color: css('--quiet'), values: m.medias[a], width: 1.5, quiet: true })),
+      { name: 'Precio', color: css('--market'), values: m.cierres, width: 2.5, end: true }],
+    extra: i => [{ value: `${m.votos_dia[i]} de ${m.total}`, name: 'plátanos maduros' }, { value: pct(m.peso_dia[i], 0), name: 'lo que quería tener' }],
+  }));
+  const votes = chartBox(box => lineChart(box, {
+    label: `Reglas a favor de ${name} cada día`, dates: m.fechas, height: 96, min: 0, max: m.total, ticks: [0, m.total / 2, m.total], fmt: v => num(v, 0),
+    series: [{ name: 'plátanos maduros', color: css('--bot'), values: m.votos_dia, step: true, area: true, width: 2.5, fmt: v => `${v} de ${m.total}` }],
+  }));
+  return el('div', { class: 'card' }, head, verdict, grid, el('p', { class: 'cap', text: closest(m) }),
+    el('div', { class: 'facts' },
+      el('div', {}, el('b', { text: pct(m.volatilidad, 0) }), 'nervios (volatilidad anual)'),
+      el('div', {}, el('b', { text: pct(m.tamano_completo, 0) }), 'lo máximo que compraría'),
+      el('div', {}, el('b', { text: pct(m.peso, 0) }), 'lo que quiero hoy'),
+      el('div', {}, el('b', { text: m.spread == null ? '—' : pct(m.spread, 3) }), 'peaje compra-venta ahora')),
+    el('h3', { style: 'margin-top:18px', text: `Precio de ${name} en euros` }), legend([['Precio', css('--market')], [`Medias de ${c.medias.join(', ')} días`, css('--quiet')]]), price,
+    el('h3', { style: 'margin-top:14px', text: 'Cuántos plátanos estaban maduros cada día' }), votes);
+}
+
+function today(d) {
+  const plan = d.si_cerrase_ahora, c = d.cuenta, n = d.config.medias.length * d.config.momentos.length;
+  const what = c.parado ? 'Ahora estoy parado: no haré nada hasta que me reactives.' : !plan.length ? 'Si el día acabase ahora mismo, no movería nada.'
+    : 'Si el día acabase ahora mismo, ' + plan.map(o => `${o.lado === 'buy' ? 'compraría' : 'vendería'} unos ${eur(o.euros, 0)} de ${coin(o.simbolo)}`).join(' y ') + '.';
+  return [
+    title('🗳️', '¿Qué dice el plátano hoy?'),
+    el('p', { class: 'sub', text: `Cada moneda la miran ${n} reglas, y cada regla es un plátano: madura (se pone amarillo) cuando el precio está por encima de su media y además vale más que hace unas semanas. Cuantos más maduros, más compro. ${what} Próxima revisión: ${nextRun()}.` }),
+    el('div', { class: 'grid g2' }, d.config.simbolos.map(s => coinCard(d, s))),
+  ];
+}
+
+function history(d) {
+  const h = d.historial, eq = h.equity, ops = h.operaciones.slice().reverse();
+  const chart = eq.length > 1 ? chartBox(box => lineChart(box, { label: 'Valor día a día', dates: eq.map(r => r.vela), height: 220, fmt: v => eur(v, 0),
+    series: [{ name: 'Valor', color: css('--bot'), values: eq.map(r => r.equity), width: 2.5, end: true, area: true, fmt: v => eur(v) }] }))
+    : empty('🌱', 'Solo llevo un día apuntado. La curva saldrá en cuanto haya dos.');
+  const table = ops.length ? el('div', { class: 'scroll' }, el('table', {},
+    el('thead', {}, el('tr', {}, ['Día', 'Qué hice', 'Moneda', 'Importe', 'Precio', 'Comisión'].map(t => el('th', { text: t })))),
+    el('tbody', {}, ops.slice(0, 30).map(o => el('tr', {}, el('td', { text: day(o.candle) }), el('td', { text: o.side === 'buy' ? 'Compré' : 'Vendí' }), el('td', { text: coin(o.symbol) }),
+      el('td', { text: eur(Math.abs(+o.cash_delta)) }), el('td', { text: eur(+o.price, +o.price > 1000 ? 0 : 2) }), el('td', { text: eur(+o.fee_eur, 3) }))))))
+    : empty('😴', 'Todavía no he movido ni un céntimo: no ha habido ola desde que arranqué.');
+  return [
+    title('📒', 'El diario del plátano'),
+    el('p', { class: 'sub', text: 'Lo que apunto cada noche al hacer la revisión, y cada compra y venta.' }),
+    el('div', { class: 'grid g2' }, el('div', { class: 'card' }, el('h3', { text: 'Cuánto vale, día a día' }), chart), el('div', { class: 'card' }, el('h3', { text: 'Últimos movimientos' }), table)),
+  ];
+}
+
+function backtest(d) {
+  const b = d.backtest, me = b.metricas.estrategia, mb = b.metricas.comprar, l = b.suerte, base = b.estrategia[0];
+  const dd = v => { let top = -Infinity; return v.map(x => { top = Math.max(top, x); return x / top - 1; }); };
+  const curve = chartBox(box => lineChart(box, { label: 'Evolución de ' + eur(base, 0), dates: b.fechas, height: 300, log: true, fmt: v => eur(v, 0),
+    series: [{ name: HOLD, color: css('--market'), values: b.comprar, end: true }, { name: BOT, color: css('--bot'), values: b.estrategia, width: 2.5, end: true }] }));
+  const draw = chartBox(box => lineChart(box, { label: 'Caída desde el máximo', dates: b.fechas, height: 200, max: 0, fmt: v => pct(v, 0),
+    series: [{ name: HOLD, color: css('--market'), values: dd(b.comprar) }, { name: BOT, color: css('--bot'), values: dd(b.estrategia), width: 2.5, area: true }] }));
+  const years = chartBox(box => yearBars(box, b.anual));
+  const two = [[BOT, css('--bot')], [HOLD, css('--market')]];
+  const row = (label, a, c) => el('tr', {}, el('td', { text: label }), el('td', { text: a }), el('td', { text: c }));
+  const ok = (v, text) => el('li', {}, el('span', { text: v ? '✅' : '❌' }), el('span', { text }));
+  return [
+    title('⏳', 'La máquina del tiempo'),
+    el('p', { class: 'sub', text: `¿Y si hubiera empezado en 2020? Simulación con los precios reales de Binance en euros del ${day(b.desde)} al ${day(b.hasta)}, con ${eur(base, 0)} y descontando comisiones. Es el pasado: sirve para descartar lo que no funciona, no para prometer nada.` }),
+    el('div', { class: 'card' }, el('h3', { text: eur(base, 0) + ' puestos el primer día' }), el('p', { class: 'cap', style: 'margin:0', text: `Escala logarítmica: pasar de ${eur(base, 0)} a ${eur(base * 2, 0)} ocupa lo mismo que pasar de ${eur(base * 5, 0)} a ${eur(base * 10, 0)}.` }), legend(two), curve),
+    el('div', { class: 'grid g2', style: 'margin-top:18px' },
+      el('div', { class: 'card' }, el('h3', { text: 'Los resbalones: cuánto cayó desde su máximo' }), legend(two), draw),
+      el('div', { class: 'card' }, el('h3', { text: 'Año a año' }), legend(two.map(t => [...t, true])), years,
+        el('details', {}, el('summary', { text: 'Ver los números' }), el('table', {}, el('thead', {}, el('tr', {}, ['Año', BOT, HOLD].map(t => el('th', { text: t })))),
+          el('tbody', {}, b.anual.map(r => row(String(r.ano), pct(r.estrategia, 1, true), pct(r.comprar, 1, true)))))))),
+    el('div', { class: 'grid g2', style: 'margin-top:18px' },
+      el('div', { class: 'card' }, el('h3', { text: 'En números' }), el('table', {},
+        el('thead', {}, el('tr', {}, el('th', {}), el('th', {}, el('i', { class: 'key', style: 'border-color:' + css('--bot') }), BOT), el('th', {}, el('i', { class: 'key', style: 'border-color:' + css('--market') }), HOLD))),
+        el('tbody', {}, row('Ganancia media al año', pct(me.cagr, 0), pct(mb.cagr, 0)), row('Peor resbalón', pct(me.maxdd, 0), pct(mb.maxdd, 0)),
+          row('Vaivén (volatilidad)', pct(me.vol, 0), pct(mb.vol, 0)), row('Ganancia por cada susto (Sharpe)', num(me.sharpe), num(mb.sharpe)))),
+        el('p', { class: 'cap', text: `${b.operaciones} operaciones (${num(b.operaciones_mes, 1)} al mes), ${pct(b.comisiones_anual, 1)} al año en comisiones, invertido el ${pct(b.tiempo_invertido, 0)} del tiempo.` })),
+      el('div', { class: 'card' }, el('h3', { text: '¿Y si hubieras empezado otro día?' }),
+        el('p', { class: 'cap', style: 'margin:0 0 8px', text: `Resultado al cabo de un año, probando a empezar cada uno de los ${num(l.inicios, 0)} días posibles.` }),
+        el('div', { class: 'facts' },
+          el('div', {}, el('b', { text: pct(l.mediana, 0, true) }), 'lo normal'), el('div', {}, el('b', { text: pct(l.peor, 0, true) }), 'el peor día para empezar'),
+          el('div', {}, el('b', { text: pct(l.mejor, 0, true) }), 'el mejor día'), el('div', {}, el('b', { text: pct(l.negativos, 0) }), 'acabaron el año perdiendo'),
+          el('div', {}, el('b', { text: pct(l.freno, 1) }), 'habría saltado el freno')),
+        el('ul', { class: 'checks' },
+          ok(b.criterios.sharpe, 'Gana más por cada susto que comprar y mantener'), ok(b.criterios.caida, 'Su peor resbalón es al menos un 30 % menor'),
+          ok(b.criterios.robusto, `${b.reglas_mejores} de las ${b.reglas.length} reglas, cada una por su cuenta, también ganan a comprar y mantener`)))),
+    el('div', { class: 'card', style: 'margin-top:18px' }, el('h3', { text: 'Cada plátano por separado' }),
+      el('p', { class: 'cap', style: 'margin:0 0 8px', text: `Sharpe y peor resbalón de cada regla si usara solo esa. Ninguna es «la buena»: por eso votan todas. Comprar y mantener: ${num(mb.sharpe)} y ${pct(mb.maxdd, 0)}.` }),
+      el('div', { class: 'scroll' }, el('table', {},
+        el('thead', {}, el('tr', {}, el('th', { text: 'Media' }), d.config.momentos.map(m => el('th', { text: `sube en ${m} días` })))),
+        el('tbody', {}, d.config.medias.map(a => el('tr', {}, el('td', { text: `${a} días` }), d.config.momentos.map(m => { const r = b.reglas.find(q => q.sma === a && q.mom === m); return el('td', { text: `${num(r.sharpe)} · ${pct(r.maxdd, 0)}` }); }))))))),
+  ];
+}
+
+function how(d) {
+  const c = d.config, n = c.medias.length * c.momentos.length;
+  const spreads = c.simbolos.map(s => d.mercado[s].spread).filter(v => v != null);
+  const step = (ico, t, p) => el('li', {}, el('span', { class: 'ico', text: ico, 'aria-hidden': 'true' }), el('h3', { text: t }), el('p', { text: p }));
+  return [
+    title('🧠', 'Cómo pienso'),
+    el('p', { class: 'sub', text: 'Soy un plátano surfero: me subo a la ola cuando el precio lleva tiempo subiendo y me bajo a la arena (euros) cuando se acaba. No intento adivinar el futuro.' }),
+    el('div', { class: 'card' }, el('ol', { class: 'steps' },
+      step('🌊', '¿Hay ola?', `Cada noche, ${n} reglas votan por cada moneda. Cada una compara el precio con su media de ${c.medias.join(', ')} días y con el de hace ${c.momentos.join(', ')} días.`),
+      step('⚖️', '¿Cuánto compro?', `Cuanto más nerviosa está la moneda, menos compro. Con todos los votos a favor llego como mucho al ${pct(c.tope, 0)} por moneda; con la mitad de los votos, a la mitad.`),
+      step('🎯', '¿Me muevo hoy?', `Solo si lo que debería tener se aleja más de ${pct(c.banda, 0)} de lo que tengo, y nunca por menos de ${eur(c.orden_minima, 0)}. Si ninguna regla vota sí, vendo todo sin esperar.`),
+      step('🛑', 'Freno de emergencia', `Si el dinero baja del ${pct(c.freno, 0)} de lo que pusiste, vendo todo y me paro hasta que tú me reactives.`)),
+      el('p', { class: 'cap', style: 'margin-top:16px', text: `El peaje: ${pct(c.comision, 2)} de comisión de Binance por operación.` + (spreads.length ? ` La diferencia entre precio de compra y de venta ahora mismo es del ${pct(Math.max(...spreads), 3)}; la máquina del tiempo supone un ${pct(c.slippage, 2)}, bastante más.` : '') + ' Solo compro (no apuesto a que baje) y nunca uso dinero prestado.' })),
+  ];
+}
+
+// ---------- pantalla ----------
+let data = null;
+$('marca').prepend(mascot('chill'));
+$('carga').append(mascot('chill'), el('p', { text: 'Pelando los datos…' }));
+function render() {
+  if (!data) return;
+  const c = data.cuenta, real = c.modo === 'live';
+  $('modo').replaceChildren(el('span', { class: 'dot ' + (real ? 'warn' : '') }), el('b', { text: real ? 'REAL' : 'PRUEBA' }), real ? 'dinero de verdad' : 'dinero de mentira');
+  const state = c.parado ? ['bad', 'Parado'] : c.al_dia ? ['ok', 'Al día'] : ['warn', 'Falta la revisión de hoy'];
+  $('salud').replaceChildren(el('span', { class: 'dot ' + state[0] }), el('b', { text: state[1] }), c.telegram ? 'Telegram activo' : 'sin Telegram');
+  $('cuando').textContent = 'Datos de las ' + new Date(data.generado).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  charts.length = 0;
+  $('app').replaceChildren(...account(data), ...today(data), ...history(data), ...backtest(data), ...how(data));
+  charts.forEach(draw => draw());
+}
+function redraw() { hideTip(); if (data) render(); }
+let timer; window.addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(() => { hideTip(); charts.forEach(draw => draw()); }, 120); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
+
+function warn(text, soft) { $('aviso').replaceChildren(text ? el('div', { class: 'alert' + (soft ? ' soft' : ''), text }) : ''); }
+// Dentro de la app del Mac los datos los trae la propia app; en un navegador, el servidor local del panel
+const bridge = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.banana;
+async function api(kind) {
+  if (bridge) return JSON.parse(await bridge.postMessage(kind));
+  const res = await fetch(kind === 'foto' ? '/api/foto' : '/api/actualizar', kind === 'foto' ? {} : { method: 'POST', headers: { 'X-Banana': '1' } });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || 'Error ' + res.status);
+  return body;
+}
+let busy = false;
+async function refresh() {
+  if (busy) return;
+  busy = true;
+  const btn = $('actualizar');
+  btn.disabled = true; btn.textContent = 'Pelando…'; $('app').classList.add('stale');
+  try { data = await api('actualizar'); warn(''); render(); }
+  catch (e) { warn((data ? 'No he podido traer datos nuevos (te enseño los últimos). ' : 'No he podido hablar con el servidor. ') + (e.message || e), !!data); }
+  finally { busy = false; btn.disabled = false; btn.textContent = 'Refrescar'; $('app').classList.remove('stale'); }
+}
+window.bananaRefresh = refresh;
+$('actualizar').addEventListener('click', refresh);
+(async () => {
+  try { data = await api('foto'); render(); } catch (e) { /* aún no hay foto guardada: se pide una nueva */ }
+  await refresh();
+  setInterval(() => { if (!document.hidden) refresh(); }, 10 * 60 * 1000);
+  if (!bridge) setInterval(() => { fetch('/api/ping').catch(() => {}); }, 4 * 60 * 1000);   // señal de vida para el servidor local
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && data && Date.now() - new Date(data.generado) > 10 * 60 * 1000) refresh(); });
+})();
+</script>
+</body>
+</html>
